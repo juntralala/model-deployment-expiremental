@@ -1,6 +1,7 @@
 import tensorflow as tf
 from PIL import Image
-import numpy as np
+from numba import cuda 
+import gc
 
 
 class Model():
@@ -15,4 +16,16 @@ class Model():
         # data = tf.keras.applications.mobilenet.preprocess_input(data)
         prediction = self.model.predict(data)
         return prediction
+    def reset(self):
+        #Check use gpu or no
+        if tf.test.gpu_device_name():
+            print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
+            device = cuda.get_current_device()
+            device.reset()
+        else:
+            del self.model
+            tf.keras.backend.clear_session()
+            gc.collect()
+            self.model = None
+        
 
