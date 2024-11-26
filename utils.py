@@ -27,5 +27,28 @@ class Model():
             tf.keras.backend.clear_session()
             gc.collect()
             self.model = None
-        
 
+def preprocessData(data: Image, res: list) -> tuple[Image.Image, str]: 
+    box_coordinates = list(map(int, res[0].boxes.xyxy[0].tolist()))
+    data = data.crop((box_coordinates[0], box_coordinates[1], box_coordinates[2], box_coordinates[3]))  
+    data = data.resize((224, 224))
+    data = data.convert('RGB')
+    label = res[0].boxes.cls[0].item()
+    return (data, label)
+        
+def fruitModel(label: str) -> tf.keras.models.Model:
+    print(label)
+    
+    if label == 'apple':
+        path = 'model/Apple.keras'
+    elif label == 'banana':
+        path = 'model/banana.keras'
+    elif label == 'capsicum':
+        path = 'model/capsicum.keras'
+    elif label == 'tomato':
+        path = 'model/tomato.keras'
+    elif label == 'cabbage':
+        path = 'model/cabbage.keras'
+    else:
+        return 'No model found'
+    return path

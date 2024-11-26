@@ -1,9 +1,9 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse
 from PIL import Image
-from utils import Model
+from utils import Model, preprocessData, fruitModel
 import tensorflow as tf
-from model import Item
+from ultralytics import YOLO
+
 
 app = FastAPI()
 labels = ["Fresh", "Rotten"]
@@ -13,13 +13,17 @@ async def root():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+    
     file.file.seek(0)
     img = Image.open(file.file)
-    img = img.resize((224, 224))
-    imageToBinary = img.convert('RGB')
+    data=img.resize((640,640))
+    yolo = YOLO("model/best.pt")
+    res = yolo.predict(data, device='cpu')
+    cropImg, label = preprocessData(data, res)
+    
     with tf.device('/cpu:0'):
-        model = Model("Fruit Classification", "./model/cabbage.keras")
-        output = model.predict(imageToBinary)
+        model = Model("Fruit Classification", fruitModel(yolo.names[label]))
+        output = model.predict(cropImg)
         model.reset()
     return {"prediction": labels[output.argmax()],
             "confidence": str(output.max())}
