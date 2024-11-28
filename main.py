@@ -25,7 +25,7 @@ async def predict(file: UploadFile = File(...)):
         model = Model("Fruit Classification", fruitModel(yolo.names[label]))
         output = model.predict(cropImg)
         model.reset()
-    return {"prediction": labels[output.argmax()],
+    return {"prediction": labels[output.argmax()] + " " +yolo.names[label],
             "confidence": str(output.max())}
     
 
