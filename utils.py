@@ -2,6 +2,8 @@ import tensorflow as tf
 from PIL import Image
 from numba import cuda 
 import gc
+import json
+from model import Validation    
 
 
 class Model():
@@ -52,3 +54,18 @@ def fruitModel(label: str) -> tf.keras.models.Model:
     else:
         return 'No model found'
     return path
+def calculate_freshness(smell: str, texture:str, confidence:float, shop_verified: bool) -> float:
+    smell_scores = {"fresh": 100, "neutral": 50, "rotten": 0}
+    texture_scores = {"hard": 100, "normal": 50, "soft": 0}
+    smell_score = smell_scores.get(smell, 50)  
+    texture_score = texture_scores.get(texture, 50)  
+
+    if shop_verified:
+        shop_score = 100
+    else:
+        shop_score = 0
+    
+    
+    total_score = float((smell_score + texture_score + confidence + shop_score) / 4)
+    
+    return total_score
