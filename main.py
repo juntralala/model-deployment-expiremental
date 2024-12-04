@@ -2,10 +2,14 @@ from fastapi import  FastAPI, File, Form, UploadFile
 from PIL import Image
 from utils import Model, preprocessData, fruitModel, calculate_freshness
 import tensorflow as tf
-from ultralytics import YOLO
+# from ultralytics import YOLO
 from model import Validation
 import json
+from YoloPool import YoloPool
+from ModelPool import ModelPool
 
+yoloPool = YoloPool(2)
+modelPool = ModelPool(1)
 
 app = FastAPI()
 labels = ["Fresh", "Rotten"]
@@ -26,12 +30,12 @@ async def predict(validation: str = Form(...) , file: UploadFile = File(...)):
     except:
         return {"error": "Invalid image file"}
     data=img.resize((640,640))
-    yolo = YOLO("model/best.pt")
+    yolo = yoloPool.getYolo()
     res = yolo.predict(data, device='cpu')
     cropImg, label = preprocessData(data, res)
     
     with tf.device('/cpu:0'):
-        model = Model("Fruit Classification", fruitModel(yolo.names[label]))
+        model = modelPool.getModel(fruitModel(yolo.names[label]))
         output = model.predict(cropImg)
         model.reset()
 
@@ -40,9 +44,10 @@ async def predict(validation: str = Form(...) , file: UploadFile = File(...)):
     else:
         freshness = calculate_freshness(validation_obj.smell, validation_obj.texture, 100 - output.max(), validation_obj.verifiedShop)
         
-    
-    return {"prediction": labels[output.argmax()] + " " +yolo.names[label],
+    try:
+        return {"prediction": labels[output.argmax()] + " " +yolo.names[label],
             "confidence": freshness}
-    
+    finally:
+        yolo.reset()
 
     
